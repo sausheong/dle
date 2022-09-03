@@ -10,8 +10,9 @@ from functools import partial
 from flax.training.common_utils import shard_prng_key
 from PIL import Image
 
-# DALLE_MODEL = "dalle-mini/dalle-mini/mega-1-fp16:latest"  # can be wandb artifact or 🤗 Hub or local folder or google bucket
-DALLE_MODEL = "dalle-mini/dalle-mini/mini-1:v0"
+# DALLE_MODEL = "dalle-mini/dalle-mini/mega-1-fp16:latest"  
+DALLE_MODEL = "dalle-mini/dalle-mini/mega-1:v16"  
+# DALLE_MODEL = "dalle-mini/dalle-mini/mini-1:v0"
 DALLE_COMMIT_ID = None
 
 # VQGAN model
@@ -35,6 +36,7 @@ vqgan_params = replicate(vqgan_params)
 
 # generate images
 def generate_images(prompts, id):
+    images = []
     n_predictions = 8
     gen_top_k = None
     gen_top_p = None
@@ -65,7 +67,10 @@ def generate_images(prompts, id):
         decoded_images = decoded_images.clip(0.0, 1.0).reshape((-1, 256, 256, 3))
         for decoded_img in decoded_images:
             img = Image.fromarray(np.asarray(decoded_img * 255, dtype=np.uint8))
-            img.save(f"static/generated/{id}-{i}.png")
+            images.append(img)
+        
+        for idx, img in enumerate(images):
+            img.save(f"static/generated/{id}-{idx}.png")
 
 # generate
 @partial(jax.pmap, axis_name="batch", static_broadcasted_argnums=(3, 4, 5, 6))
